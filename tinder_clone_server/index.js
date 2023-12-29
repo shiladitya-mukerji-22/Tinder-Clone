@@ -6,7 +6,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const cors = require('cors');
 
-const uri = 'mongodb+srv://admin:6pwz4sTe8efS2GTn@cluster0.kokuqbc.mongodb.net/'
+const uri = 'mongodb+srv://<username>:<password>@cluster0.kokuqbc.mongodb.net/'
 const PORT = 3000;
 const jwtSecretKey = '@#$';
 
