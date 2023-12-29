@@ -6,12 +6,12 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const cors = require('cors');
 
-const uri = 'mongodb+srv://<username>:<password>@cluster0.kokuqbc.mongodb.net/'
+const uri = 'mongodb+srv://admin:6pwz4sTe8efS2GTn@cluster0.kokuqbc.mongodb.net/'
 const PORT = 3000;
 const jwtSecretKey = '@#$';
 
 
-app.use(cors()); // Use cors middleware
+app.use(cors());
 
 app.use(express.json())
 
@@ -19,6 +19,31 @@ app.get('/', (req, res) => {
     res.send('Hi');
 })
 
+// Logs in a user
+app.post('/login', async (req, res) => {
+    const dbClient = new MongoClient(uri);
+    const { email, password } = req.body;
+
+    try {
+        await dbClient.connect();
+        const database = dbClient.db('app-data');
+        const users = database.collection('users');
+
+        const existingUser = await users.findOne({ email });
+
+        if (existingUser && (await bcrypt.compare(password, existingUser.hashedPassword))) {
+
+            const token = jwt.sign({ userId: existingUser.user_id, email }, jwtSecretKey, { expiresIn: 60 * 24 });
+            res.status(200).json({ token, UserId: existingUser.user_id });
+        } else {
+            res.status(404).send('User doesn\'t exist or incorrect password');
+        }
+    } catch (err) {
+        res.status(500).send(err);
+    }
+});
+
+// Creates a new user
 app.post('/signup', async (req, res) => {
     const dbClient = new MongoClient(uri);
     const { email, password } = req.body;
@@ -49,7 +74,7 @@ app.post('/signup', async (req, res) => {
 
         const token = jwt.sign({ insertedUser, sanitizedEmail }, jwtSecretKey, { expiresIn: 60 * 24 });
 
-        res.status(201).json({ 'token': token, 'userId': generateUserId, 'email': sanitizedEmail });
+        res.status(201).json({ token, UserId: generateUserId });
 
     } catch (err) {
         res.status(500).json({ 'messgae': err });
@@ -69,6 +94,43 @@ app.get('/users', async (req, res) => {
         res.json(returnedUsers);
 
     } finally {
+        await dbClient.close();
+    }
+})
+
+// Updates a user
+app.put('/user', async (req, res) => {
+    const dbClient = new MongoClient(uri);
+
+    const formdata = req.body.formData;
+
+    try {
+        await dbClient.connect();
+        const database = dbClient.db('app-data')
+        const user = database.collection('users');
+
+        const query = { user_id: formdata.user_id };
+        const updateDocument= {
+            $set:{
+                first_name: formdata.first_name,
+                dob_day: formdata.dob_day,
+                dob_month: formdata.dob_month,
+                dob_year: formdata.dob_year,
+                show_gender: formdata.show_gender,
+                gender_identity: formdata.gender_identity,
+                gender_interest: formdata.gender_interest,
+                url: formdata.url,
+                matches: formdata.matches
+            }
+        }
+
+        const insertedUser = await user.updateOne(query, updateDocument);
+        res.status(200).send(insertedUser);
+        console.log(insertedUser);
+
+    } catch (err) {
+        res.status(500).json(err);
+    }finally{
         await dbClient.close();
     }
 })

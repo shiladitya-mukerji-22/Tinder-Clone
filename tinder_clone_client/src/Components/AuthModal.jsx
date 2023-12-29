@@ -2,12 +2,14 @@ import React from 'react';
 import { useState } from "react";
 import axios from 'axios'
 import { useNavigate } from 'react-router-dom'
+import { useCookies } from 'react-cookie'
 
 const AuthModal = ({ setShowModal, isSignUp }) => {
     const [email, setEmail] = useState(null);
     const [password, setPassword] = useState(null);
     const [confirmPassword, setConfirmPassword] = useState(null);
     const [error, setError] = useState(null);
+    const [cookie, setCookie, removeCookie] = useCookies(['user']);
 
     let navigate = useNavigate();
 
@@ -28,11 +30,18 @@ const AuthModal = ({ setShowModal, isSignUp }) => {
 
             console.log(email, password, confirmPassword);
 
-            const response = await axios.post('http://localhost:3000/signup', { email, password });
+            const response = await axios.post(`http://localhost:3000/${isSignUp ? 'signup' : 'login'}`, { email, password });
+
+            console.log(response);
+
+            setCookie('AuthToken', response.data.token);
+            setCookie('UserId', response.data.UserId)
 
             const success = response.status === 201;
+            const success_2 = response.status === 200;
 
-            if (success) navigate('/onboarding');
+            if (success && isSignUp) navigate('/onboarding');
+            if (success_2 && !isSignUp) navigate('/dashboard');
 
         } catch (error) {
             console.log(error);

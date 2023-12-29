@@ -1,11 +1,16 @@
-import React from 'react'; 
+import React from 'react';
 import { UseState, useState } from 'react'
 import Nav from '../Components/Nav';
+import { useCookies } from 'react-cookie'
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios'
 
 const Onboarding = () => {
 
+    const [cookie, setCookie, removeCookie] = useCookies(['user']);
+
     const [formData, setFormData] = useState({
-        user_id: '',
+        user_id: cookie.UserId,
         first_name: '',
         dob_day: '',
         dob_month: '',
@@ -13,18 +18,31 @@ const Onboarding = () => {
         show_gender: false,
         gender_identity: '',
         gender_interest: '',
-        email: '',
         url: '',
         about: '',
         matches: []
     })
 
-    const handleSubmit = () => {
+    let navigate = useNavigate();
+
+    const handleSubmit = async (e) => {
         console.log('submitted');
+        e.preventDefault();
+
+        console.log(formData);
+
+        try {
+            const response = await axios.put('http://localhost:3000/user', { formData });
+            const success = response.status === 200;
+            if (success) navigate('/dashboard');
+
+        } catch (err) {
+            console.log(err);
+        }
     }
 
     const handleChange = (e) => {
-        const value = e.target.type ==='checkbox'? e.target.checked: e.target.value;
+        const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
         const name = e.target.name;
 
         setFormData((prevState) => ({
@@ -194,7 +212,7 @@ const Onboarding = () => {
                             required={true}
                         />
                         <div className='photo-container'>
-                            <img src={formData.url} alt='profile pic preview'/>
+                            {formData.url && <img src={formData.url} alt='profile pic preview' />}
                         </div>
 
                     </section>
